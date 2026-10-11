@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+output/
+.idea/
+*_old*.py
+*_old*.md
+*_old*.txt

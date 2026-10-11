@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!--
+  PAGE DE TEST LONGUE (~3,5 ecrans) A DEFAUTS SEMES (verite-terrain).
+
+  Version allongee de index.html pour tester le tuilage sur page longue.
+  Les defauts perceptuels sont REPARTIS sur toute la hauteur (haut / milieu /
+  bas) afin qu'aucune tuile unique ne les contienne tous. Chaque defaut est
+  annote avec son critere WCAG et le flux cense le detecter.
+
+  NE PAS "corriger" cette page : ses defauts sont le jeu de test.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <!-- DEFAUT (viewport) : blocage du zoom -> 1.4.4 (flux code) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Page de demonstration longue - defauts semes</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; color: #222; }
+    .faible-contraste { color: #b8b8b8; background: #ffffff; }   /* 1.4.3 */
+    .btn-sans-focus:focus { outline: none; }                      /* 2.4.7 */
+    button, .faux-bouton { padding: .5rem 1rem; margin: .3rem; }
+    .faux-bouton { display: inline-block; background: #0a5; color: #fff; cursor: pointer; }
+    .statut { font-weight: bold; }
+    .ok { color: green; }    /* 1.4.1 : info par couleur seule */
+    .ko { color: red; }
+    .section { margin: 2.5rem 0; padding: 1rem 0; border-top: 1px solid #eee; }
+    .bloc-haut   { min-height: 800px; }
+    .bloc-milieu { min-height: 1000px; }
+    .bloc-bas    { min-height: 850px; }
+    #demo-modal {
+      display: none; position: fixed; top: 20%; left: 50%;
+      transform: translateX(-50%); background: #fff; border: 2px solid #333;
+      padding: 1.5rem; box-shadow: 0 0 20px rgba(0,0,0,.4);
+    }
+    #demo-modal.ouverte { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- ===================== ZONE HAUT (1er ecran) ===================== -->
+  <h1>Boutique de demonstration</h1>
+  <!-- DEFAUT (hierarchie des titres) : saut h1 -> h4 -> 1.3.1 -->
+  <h4>Nos produits</h4>
+
+  <!-- DEFAUT (image sans alt) -> 1.1.1 (flux code) -->
+  <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iODAiPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iODAiIGZpbGw9IiMwODgiLz48dGV4dCB4PSIxMCIgeT0iNDgiIGZpbGw9IiNmZmYiIGZvbnQtc2l6ZT0iMjQiPlNPTERFUyAtNTAlPC90ZXh0Pjwvc3ZnPg==">
+  <!-- DEFAUT (texte dans image) : "SOLDES -50%" existe QUE dans l'image -> 1.4.5 -->
+  <p>Voir l'offre ci-dessus.</p>
+
+  <div class="section bloc-haut">
+    <h2>Bienvenue</h2>
+    <p>Notre boutique propose une large gamme de produits. Faites defiler la page
+       pour decouvrir nos categories, nos promotions et le suivi de vos commandes.</p>
+    <p>Cette zone occupe le haut de la page. Le premier ecran contient l'en-tete,
+       la banniere promotionnelle et cette introduction.</p>
+    <p style="margin-top:550px;">Continuez a defiler pour voir la suite...</p>
+  </div>
+
+  <!-- ===================== ZONE MILIEU (2e-3e ecran) ===================== -->
+  <div class="section bloc-milieu">
+    <h2>Etat de vos commandes</h2>
+
+    <!-- DEFAUT (info par couleur seule) -> 1.4.1 (flux visuel), place au MILIEU -->
+    <p>Statut :
+       <span class="statut ok">Commande 1</span> /
+       <span class="statut ko">Commande 2</span>
+       (le statut n'est indique que par la couleur).</p>
+
+    <!-- DEFAUT (contraste) -> 1.4.3 (flux code) -->
+    <p class="faible-contraste">Ce texte gris clair, au milieu de la page, est
+       difficile a lire pour beaucoup d'utilisateurs.</p>
+
+    <!-- DEFAUT (champ sans label) -> 1.3.1 / 4.1.2 (flux code) -->
+    <p><input type="text" placeholder="Votre email"></p>
+
+    <!-- DEFAUT (deuxieme texte dans image) au milieu -> 1.4.5 (flux visuel) -->
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iNzAiPjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNzAiIGZpbGw9IiNjMDM5MmIiLz48dGV4dCB4PSIxNSIgeT0iNDQiIGZpbGw9IiNmZmYiIGZvbnQtc2l6ZT0iMjAiPkxJVlJBSVNPTiBHUkFUVUlURTwvdGV4dD48L3N2Zz4=">
+    <p>Profitez de nos avantages (voir banniere ci-dessus).</p>
+
+    <p style="margin-top:550px;">Encore un peu de defilement...</p>
+  </div>
+
+  <!-- ===================== ZONE BAS (3e-4e ecran) ===================== -->
+  <div class="section bloc-bas">
+    <h2>Actions</h2>
+
+    <!-- DEFAUT (bouton icone sans nom accessible) -> 4.1.2 (flux code) -->
+    <button aria-hidden="false">🔍</button>
+
+    <!-- DEFAUT (lien sans texte discernable) -> 2.4.4 (flux code) -->
+    <a href="#"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PC9zdmc+"></a>
+
+    <!-- DEFAUT (faux bouton) : div cliquable sans role ni tabindex -> 2.1.1 -->
+    <div class="faux-bouton" onclick="alert('clic')">Ajouter au panier</div>
+
+    <!-- DEFAUT (focus invisible) -> 2.4.7 (flux clavier) -->
+    <button class="btn-sans-focus">Bouton au focus invisible</button>
+
+    <hr>
+
+    <!-- Declencheur de l'etat POST-INTERACTION, tout en bas -->
+    <button id="open-modal">Ouvrir la fenetre d'aide</button>
+  </div>
+
+  <!--
+    DEFAUT POST-INTERACTION : modale qui NE se ferme PAS avec Echap et NE deplace
+    PAS le focus vers elle. -> 2.1.2 et 2.4.3 (flux clavier, apres interaction)
+  -->
+  <div id="demo-modal" role="dialog" aria-modal="true">
+    <h2>Aide</h2>
+    <p>Cette fenetre ne se ferme pas avec la touche Echap.</p>
+    <button onclick="document.getElementById('demo-modal').classList.remove('ouverte')">
+      Fermer (souris uniquement)
+    </button>
+  </div>
+
+  <script>
+    document.getElementById('open-modal').addEventListener('click', function () {
+      document.getElementById('demo-modal').classList.add('ouverte');
+      // volontairement : pas de focus() sur la modale, pas de handler Echap
+    });
+  </script>
+</body>
+</html>

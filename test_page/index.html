@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<!--
+  PAGE DE TEST A DEFAUTS SEMES (verite-terrain).
+
+  Cette page contient des defauts d'accessibilite INTENTIONNELS servant de
+  reference controlee pour evaluer l'agent. Chaque defaut est annote avec le
+  critere WCAG attendu et le flux cense le detecter.
+
+  NE PAS "corriger" cette page : ses defauts sont le jeu de test.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <!-- DEFAUT (viewport) : blocage du zoom -> 1.4.4 (flux code) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Page de demonstration - defauts semes</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; color: #222; }
+    /* DEFAUT (contraste) : gris clair sur blanc -> 1.4.3 (flux code) */
+    .faible-contraste { color: #b8b8b8; background: #ffffff; }
+    /* DEFAUT (focus invisible) : outline retire -> 2.4.7 (flux clavier) */
+    .btn-sans-focus:focus { outline: none; }
+    button, .faux-bouton { padding: .5rem 1rem; margin: .3rem; }
+    .faux-bouton { display: inline-block; background: #0a5; color: #fff; cursor: pointer; }
+    .statut { font-weight: bold; }
+    /* Information par la couleur seule -> 1.4.1 (flux visuel) */
+    .ok { color: green; }
+    .ko { color: red; }
+    #demo-modal {
+      display: none; position: fixed; top: 20%; left: 50%;
+      transform: translateX(-50%); background: #fff; border: 2px solid #333;
+      padding: 1.5rem; box-shadow: 0 0 20px rgba(0,0,0,.4);
+    }
+    #demo-modal.ouverte { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- DEFAUT (hierarchie des titres) : on saute de h1 a h4 -> 1.3.1 (flux code/visuel) -->
+  <h1>Boutique de demonstration</h1>
+  <h4>Nos produits</h4>
+
+  <!-- DEFAUT (image sans alt) -> 1.1.1 (flux code) -->
+  <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iODAiPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iODAiIGZpbGw9IiMwODgiLz48dGV4dCB4PSIxMCIgeT0iNDgiIGZpbGw9IiNmZmYiIGZvbnQtc2l6ZT0iMjQiPlNPTERFUyAtNTAlPC90ZXh0Pjwvc3ZnPg==">
+
+  <!-- DEFAUT (texte dans une image) : "SOLDES -50%" n'existe QUE dans l'image -> 1.4.5 (flux visuel) -->
+  <p>Voir l'offre ci-dessus.</p>
+
+  <!-- DEFAUT (contraste) -> 1.4.3 (flux code) -->
+  <p class="faible-contraste">Ce texte gris clair est difficile a lire pour beaucoup d'utilisateurs.</p>
+
+  <!-- DEFAUT (information par la couleur seule) -> 1.4.1 (flux visuel) -->
+  <p>Etat des commandes :
+     <span class="statut ok">Commande 1</span> /
+     <span class="statut ko">Commande 2</span>
+     (le statut n'est indique que par la couleur).</p>
+
+  <!-- DEFAUT (champ sans label) -> 1.3.1 (flux code) -->
+  <p>
+    <input type="text" placeholder="Votre email">
+  </p>
+
+  <!-- DEFAUT (bouton icone sans nom accessible) -> 4.1.2 (flux code) -->
+  <button aria-hidden="false">🔍</button>
+
+  <!-- DEFAUT (lien sans texte discernable) -> 2.4.4 (flux code) -->
+  <a href="#"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PC9zdmc+"></a>
+
+  <!-- DEFAUT (faux bouton) : div cliquable sans role ni tabindex -> 2.1.1 (flux clavier) -->
+  <div class="faux-bouton" onclick="alert('clic')">Ajouter au panier</div>
+
+  <!-- DEFAUT (focus invisible) -> 2.4.7 (flux clavier) -->
+  <button class="btn-sans-focus">Bouton au focus invisible</button>
+
+  <hr>
+
+  <!-- Declencheur de l'etat POST-INTERACTION -->
+  <button id="open-modal">Ouvrir la fenetre d'aide</button>
+
+  <!--
+    DEFAUT POST-INTERACTION : cette modale n'apparait qu'apres clic. Elle
+    NE se ferme PAS avec Echap et NE deplace PAS le focus vers elle.
+    -> 2.1.2 et 2.4.3 (flux clavier, uniquement apres interaction)
+  -->
+  <div id="demo-modal" role="dialog" aria-modal="true">
+    <h2>Aide</h2>
+    <p>Cette fenetre ne se ferme pas avec la touche Echap.</p>
+    <button onclick="document.getElementById('demo-modal').classList.remove('ouverte')">
+      Fermer (souris uniquement)
+    </button>
+  </div>
+
+  <script>
+    // Ouvre la modale au clic, MAIS ne gere ni Echap ni le deplacement du focus.
+    document.getElementById('open-modal').addEventListener('click', function () {
+      document.getElementById('demo-modal').classList.add('ouverte');
+      // (volontairement : pas de focus() sur la modale, pas de handler Echap)
+    });
+  </script>
+</body>
+</html>
