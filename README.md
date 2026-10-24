@@ -151,7 +151,7 @@ Ne s'applique que si `AGENT_TILING` n'est pas `OFF`.
 
 Résultat mesuré : sur le 7B local, la variable déterminante est le nombre d'images par appel, pas leur contenu. Une seule image par appel (`SEQ`) fonctionne ; plusieurs images en un appel (`LOT*`) échouent. Les variantes `LOT*` restent dans le code car elles pourraient devenir viables sur un modèle plus puissant.
 
-Le guide `GUIDE_TEST_TUILAGE.md` donne des commandes de test prêtes à l'emploi pour comparer ces stratégies.
+Le guide [GUIDE_TEST_TUILAGE.md](GUIDE_TEST_TUILAGE.md) donne des commandes de test prêtes à l'emploi.
 
 ---
 
