@@ -78,6 +78,31 @@ from flows import tiling
 #     "ailleurs. Ne signale que ce que tu vois reellement sur l'image."
 # )
 
+# SYSTEM_PROMPT = (
+#     "Tu es un evaluateur d'accessibilite (a11y) rigoureux et ACTIF. Tu reponds "
+#     "EXCLUSIVEMENT en francais. Examine attentivement la capture et signale "
+#     "tous les defauts PERCEPTUELS que tu observes reellement"
+# )
+
+# SYSTEM_PROMPT = (
+#     "Tu es un evaluateur d'accessibilite (a11y) rigoureux et ACTIF. Tu reponds "
+#     "EXCLUSIVEMENT en francais. Cherche UNIQUEMENT ces cinq defauts PERCEPTUELS, "
+#     "c'est-a-dire visibles a l'oeil sur la capture :\n"
+#     "1) INFORMATION PAR LA SEULE COULEUR (1.4.1) : un statut ou une distinction "
+#     "indique seulement par la couleur.\n"
+#     "2) TEXTE INTEGRE DANS UNE IMAGE (1.4.5) : du texte peint dans une image "
+#     "ou une banniere.\n"
+#     "3) HIERARCHIE VISUELLE TROMPEUSE (1.3.1) : importance visuelle qui ne "
+#     "reflete pas le role (ex. sous-titre plus gros que le titre).\n"
+#     "4) INSTRUCTION PAR LA FORME OU LA POSITION (1.3.3) : consigne du type "
+#     "'le bouton ci-dessous' ou 'a droite'.\n"
+#     "5) COMPOSANTS INCOHERENTS (3.2.4) : des elements de meme fonction "
+#     "presentes de facon visuellement differente.\n"
+#     "Signale chaque defaut reellement observe parmi ces cinq. N'invente jamais "
+#     "de defaut qui ne se voit pas sur l'image. Si aucun : renvoie []."
+# )
+
+# ~~~~# Prompt Officiel #~~~~~~~~~~
 SYSTEM_PROMPT = (
     "Tu es un evaluateur d'accessibilite (a11y) rigoureux et ACTIF. Tu reponds "
     "EXCLUSIVEMENT en francais. Cherche activement trois types de defauts "
@@ -442,53 +467,59 @@ def run(session, screenshot_path, known_facts: list[dict], state: str = "initial
         print(f"[flux visuel] impossible d'ouvrir la capture : {exc}")
         return []
 
+    tiles_dir = config.OUTPUT_DIR / "tiles"
+
     # ---- Mode OFF : une seule image (reduite si trop grande) ----------------
     if mode is config.TilingMode.OFF:
         if config.MAX_SINGLE_DIM and max(img.size) > config.MAX_SINGLE_DIM:
             img = tiling.downscale_overview(img, config.MAX_SINGLE_DIM)
             print(f"  [visuel] image reduite a {img.size} (garde-fou OFF)")
+        name = tiling.save_single_image(img, tiles_dir)
         prompt = _prompt_single(known_facts)
         raw, err = _call_model(prompt, [tiling.image_to_base64(img)])
-        return _finish(raw, err, state)
+        return _finish(raw, err, state, tile_file=name, tile_index=0)
 
     # ---- Modes de decoupage : produire les tuiles ---------------------------
     tile_size = mode.value
     if not tiling.needs_tiling(img, tile_size):
         # page assez petite : pas besoin de decouper, une image suffit
         print(f"  [visuel] page <= {tile_size}px : envoi en une image")
+        name = tiling.save_single_image(img, tiles_dir)
         prompt = _prompt_single(known_facts)
         raw, err = _call_model(prompt, [tiling.image_to_base64(img)])
-        return _finish(raw, err, state)
+        return _finish(raw, err, state, tile_file=name, tile_index=0)
 
     tiles = tiling.split_image(img, tile_size)
     print(f"  [visuel] page decoupee en {len(tiles)} tuile(s) de <= {tile_size}px")
-    tiles_dir = config.OUTPUT_DIR / "tiles"
 
-    # ---- Strategie A : tuiles seules (VALIDE) -------------------------------
+    # ---- Strategie LOT : toutes les tuiles en un appel ---------------------
     if strat is config.TilingStrategy.LOT:
-        tiling.save_tiles(tiles, tiles_dir)
+        names = tiling.save_tiles(tiles, tiles_dir)
         images = [t.to_base64() for t in tiles]
         prompt = _prompt_tiles_A(known_facts, len(tiles))
         raw, err = _call_model(prompt, images)
-        return _finish(raw, err, state)
+        # multi-images : on rattache a la 1re tuile (image representative)
+        return _finish(raw, err, state,
+                       tile_file=names[0] if names else None, tile_index=1)
 
-    # ---- Strategie B : vue d'ensemble + tuiles (NON VALIDE) -----------------
+    # ---- Strategie LOT_VUE : vue d'ensemble + tuiles -----------------------
     if strat is config.TilingStrategy.LOT_VUE:
         overview = tiling.downscale_overview(img, tile_size)
         tiling.save_tiles(tiles, tiles_dir, overview=overview)
         images = [tiling.image_to_base64(overview)] + [t.to_base64() for t in tiles]
         prompt = _prompt_tiles_B(known_facts, len(tiles))
         raw, err = _call_model(prompt, images)
-        return _finish(raw, err, state)
+        # l'image representative est la vue d'ensemble enregistree par save_tiles
+        return _finish(raw, err, state, tile_file="vue_ensemble.png", tile_index=0)
 
-    # ---- Strategie C : B + ancrage spatial (NON VALIDE) ---------------------
+    # ---- Strategie LOT_ANCRAGE : LOT_VUE + ancrage spatial -----------------
     if strat is config.TilingStrategy.LOT_ANCRAGE:
         overview = tiling.downscale_overview(img, tile_size)
         tiling.save_tiles(tiles, tiles_dir, overview=overview)
         images = [tiling.image_to_base64(overview)] + [t.to_base64() for t in tiles]
         prompt = _prompt_tiles_C(known_facts, tiles)
         raw, err = _call_model(prompt, images)
-        return _finish(raw, err, state)
+        return _finish(raw, err, state, tile_file="vue_ensemble.png", tile_index=0)
 
     # ---- Strategie SEQ : UNE tuile par appel, en boucle --------------------
     if strat is config.TilingStrategy.SEQ:
@@ -517,7 +548,8 @@ def run(session, screenshot_path, known_facts: list[dict], state: str = "initial
             if err:
                 print(f"  [visuel] tuile {i}: INDISPONIBLE -> {err}")
                 continue
-            tile_file = f"tuile_{i-1:02d}_r{t.row}_c{t.col}.png"  # cf. save_tiles
+            # nom reel du fichier, pose par save_tiles sur la tuile (jamais reconstruit)
+            tile_file = t.filename
             for f in raw:
                 if isinstance(f, dict):
                     f["state"] = state
@@ -529,15 +561,22 @@ def run(session, screenshot_path, known_facts: list[dict], state: str = "initial
               f"{len(seq_findings)} constat(s) retenu(s).")
         return seq_findings
 
-    # securite : strategie inconnue -> repli sur A
-    tiling.save_tiles(tiles, tiles_dir)
+    # securite : strategie inconnue -> repli sur LOT
+    names = tiling.save_tiles(tiles, tiles_dir)
     images = [t.to_base64() for t in tiles]
     raw, err = _call_model(_prompt_tiles_A(known_facts, len(tiles)), images)
-    return _finish(raw, err, state)
+    return _finish(raw, err, state,
+                   tile_file=names[0] if names else None, tile_index=1)
 
 
-def _finish(raw: list, err: str, state: str) -> list[dict]:
-    """Traite le resultat d'un appel : gere l'erreur, tague l'etat, valide."""
+def _finish(raw: list, err: str, state: str,
+            tile_file: str = None, tile_index=None) -> list[dict]:
+    """Traite le resultat d'un appel : gere l'erreur, tague l'etat, valide.
+
+    tile_file / tile_index : image a afficher sous les constats dans le rapport
+    HTML. Pour les strategies multi-images (LOT*), tous les constats d'un meme
+    appel pointent vers la meme image (vue d'ensemble, ou 1re tuile a defaut).
+    """
     if err:
         print(f"[flux visuel] INDISPONIBLE -> {err}")
         print("             (les autres flux continuent, le rapport sera produit sans le visuel)")
@@ -545,6 +584,9 @@ def _finish(raw: list, err: str, state: str) -> list[dict]:
     for f in raw:
         if isinstance(f, dict):
             f["state"] = state
+            if tile_file:
+                f["tile_file"] = tile_file
+                f["tile_index"] = tile_index
     findings = clean_findings(raw, source="visuel")
     print(f"[flux visuel] {len(findings)} constat(s) retenu(s).")
     return findings

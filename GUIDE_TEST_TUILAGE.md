@@ -11,11 +11,12 @@ Tout se pilote par **deux variables d'environnement**, sans toucher au code.
 
 ### 1. Option « mère » — `AGENT_TILING` : *faut-il découper ?*
 
-| Valeur | Effet | Quand l'utiliser |
-|---|---|---|
-| `OFF` *(défaut)* | Pas de découpage. Une seule image (réduite si trop grande). | CPU, NVIDIA, ou pages courtes. |
-| `IGPU_SYCL` | Découpe en tuiles de **1008 px** max. | **iGPU Intel Arc** (contourne le crash SYCL) ; aussi utile pour les pages longues sur tout matériel. |
-| `SAFE_SMALL` | Découpe en tuiles de **756 px** max. | Repli si 1008 pose encore problème. |
+| Valeur                  | Effet | Quand l'utiliser |
+|-------------------------|---|---|
+| `SAFE_SMALL` *(défaut)* | Découpe en tuiles de **756 px** max. | Repli si 1008 pose encore problème. |
+| `OFF`                   | Pas de découpage. Une seule image (réduite si trop grande). | CPU, NVIDIA, ou pages courtes. |
+| `IGPU_SYCL`             | Découpe en tuiles de **1008 px** max. | **iGPU Intel Arc** (contourne le crash SYCL) ; aussi utile pour les pages longues sur tout matériel. |
+
 
 > Le découpage a **deux justifications** : éviter le *crash SYCL* (spécifique Intel)
 > **et** garder une page longue *lisible* (universel, tout matériel).
@@ -40,14 +41,25 @@ Tout se pilote par **deux variables d'environnement**, sans toucher au code.
 
 ## Commandes de test (Windows CMD)
 
-> Prérequis : le serveur Ollama (Intel) tourne déjà (`start-ollama.bat`).
+> Prérequis : le serveur Ollama tourne déjà (voir le README).
 > Les variables se posent **dans la fenêtre où vous lancez `python run.py`**.
 
-### Cas par défaut — pas de découpage (une seule image)
+### Cas par défaut (découpage SAFE_SMALL, stratégie SEQ)
 ```
 python run.py
 ```
-> Équivaut à `AGENT_TILING=OFF`. C'est le comportement de base.
+> Sans aucune variable, l'agent utilise `AGENT_TILING=SAFE_SMALL` et
+> `TILING_STRATEGY=SEQ`. C'est le comportement de base, adapté aux pages
+> longues comme courtes, sur toute machine.
+
+### Forcer l'absence de découpage (une seule image)
+```
+set AGENT_TILING=OFF
+python run.py
+```
+> À réserver aux pages courtes et aux images statiques : sur une page longue,
+> l'image unique est réduite et devient illisible (le flux visuel ne détecte
+> alors rien).
 
 ### Découpage activé, stratégie SEQ (recommandée — iGPU Intel / pages longues)
 ```
@@ -65,13 +77,13 @@ python run.py
 > Note : les LOT* échouent sur le 7B (multi-images). Utiles seulement pour
 > comparer / documenter, ou tester un modèle plus puissant.
 
-### Revenir au défaut (désactiver le découpage) dans la même fenêtre
+### Revenir aux valeurs par défaut dans la même fenêtre
 ```
 set AGENT_TILING=
 set TILING_STRATEGY=
 python run.py
 ```
-> Vider la variable la ramène à sa valeur par défaut (`OFF` / `SEQ`).
+> Vider la variable la ramène à sa valeur par défaut (`SAFE_SMALL` / `SEQ`).
 
 ### Sauter complètement le flux visuel (test rapide sans le modèle)
 ```
@@ -93,17 +105,20 @@ Remove-Item Env:AGENT_TILING, Env:TILING_STRATEGY
 
 ---
 
-## Protocole de comparaison suggéré (pour le rapport, chapitre 6)
+## Protocole de comparaison suggéré
 
-1. Lancez la **même page** avec `A`, puis `B`, puis `C`.
-2. Comparez, pour chaque, le fichier `output/rapport.md` :
-   - nombre de constats perceptuels trouvés,
-   - exactitude (vrais défauts vs hallucinations),
-   - temps d'exécution affiché.
+1. Lancez la **même page** avec `SEQ`, puis une variante multi-images
+   (`LOT`, `LOT_VUE` ou `LOT_ANCRAGE`), en gardant le même `AGENT_TILING`.
+2. Comparez, pour chaque :
+   - le nombre de constats perceptuels trouvés,
+   - l'exactitude (vrais défauts vs hallucinations), en ouvrant le rapport,
+   - le temps d'exécution.
 3. Notez laquelle donne le meilleur compromis **précision / temps**.
 
-> Astuce : renommez `output/rapport.md` entre chaque essai
-> (ex. `rapport_A.md`, `rapport_B.md`, `rapport_C.md`) pour les garder côte à côte.
+> Chaque exécution produit un rapport **horodaté** (`output/AAAA-MM-JJ-HH-MM-SS.*`),
+> donc les essais ne s'écrasent pas : pas besoin de renommer les fichiers.
+> Le journal `output/execution_log.csv` consigne, pour chaque run, le modèle,
+> la stratégie, le nombre de constats et le temps, ce qui facilite la comparaison.
 
 ---
 
@@ -113,5 +128,5 @@ Ces variables-là concernent le **serveur Ollama**, pas l'agent :
 ```bat
 set OLLAMA_CONTEXT_LENGTH=8192
 set OLLAMA_NUM_PARALLEL=1
-set OLLAMA_MODELS=C:\Users\thier\.ollama\models
+set OLLAMA_MODELS=%USERPROFILE%\.ollama\models
 ```
