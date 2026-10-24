@@ -154,13 +154,13 @@ class TilingStrategy(Enum):
 
 # --- Selection par variables d'environnement (valeurs sures par defaut) -------
 def _tiling_mode_from_env():
-    name = os.environ.get("AGENT_TILING", "OFF").strip().upper()
+    name = os.environ.get("AGENT_TILING", "SAFE_SMALL").strip().upper() # old OFF
     try:
         return TilingMode[name]
     except KeyError:
-        print(f"  [config] AGENT_TILING='{name}' inconnu -> OFF par defaut "
+        print(f"  [config] AGENT_TILING='{name}' inconnu -> SAFE_SMALL par defaut "
               f"(valeurs: {', '.join(m.name for m in TilingMode)})")
-        return TilingMode.OFF
+        return TilingMode.SAFE_SMALL
 
 
 def _tiling_strategy_from_env():
