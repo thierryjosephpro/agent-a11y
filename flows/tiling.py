@@ -32,6 +32,7 @@ class Tile:
     col: int          # index de colonne (0 = gauche)
     row: int          # index de ligne (0 = haut)
     box: tuple        # (left, top, right, bottom) en px dans l'image d'origine
+    filename: str = None  # nom de fichier reel, pose par save_tiles (rattachement HTML)
 
     def to_base64(self, fmt: str = "PNG") -> str:
         buf = io.BytesIO()
@@ -107,30 +108,59 @@ def needs_tiling(img: Image.Image, tile_size: int) -> bool:
     return w > tile_size or h > tile_size
 
 
-def save_tiles(tiles, out_dir, overview=None):
-    """Sauvegarde les tuiles (et la vue d'ensemble) sur disque pour inspection.
+def save_single_image(img, out_dir, name="image_analysee.png"):
+    """Sauvegarde l'UNIQUE image envoyee au modele (mode OFF ou page courte).
 
-    Nettoie d'abord le dossier pour ne pas melanger avec un run precedent.
-    Noms : tuile_{i:02d}_r{row}_c{col}.png (i = index 0-base, dans l'ordre de la
-    liste) + vue_ensemble.png si fournie. Ce nom DOIT rester aligne avec celui
-    reconstruit dans flow_visual.py (rattachement tuile->constat pour le HTML).
-    Retourne le chemin du dossier.
+    Nettoie le dossier puis ecrit l'image sous `name`, afin que le rapport HTML
+    puisse l'afficher sous les constats, comme il le fait pour les tuiles.
+    Retourne le nom de fichier.
     """
     import shutil
-    out_dir = out_dir
+    if out_dir.exists():
+        shutil.rmtree(out_dir, ignore_errors=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    img.save(out_dir / name)
+    print(f"  [visuel] image analysee enregistree dans {out_dir / name}")
+    return name
+
+
+def tile_filename(index, tile):
+    """Nom de fichier canonique d'une tuile : tuile_{index:02d}_r{row}_c{col}.png.
+
+    index est la position 0-base dans la liste passee a save_tiles. C'est la
+    SEULE source de verite du nom : flow_visual.py le recupere via l'attribut
+    .filename pose par save_tiles, il ne le reconstruit jamais a la main.
+    """
+    return f"tuile_{index:02d}_r{tile.row}_c{tile.col}.png"
+
+
+def save_tiles(tiles, out_dir, overview=None):
+    """Sauvegarde les tuiles (et la vue d'ensemble) sur disque.
+
+    Nettoie d'abord le dossier pour ne pas melanger avec un run precedent.
+    Pose sur CHAQUE tuile un attribut .filename (son nom de fichier reel), puis
+    retourne la liste de ces noms, dans l'ordre. Le rattachement tuile->constat
+    (rapport HTML) doit lire t.filename, jamais reconstruire le nom : c'est ce
+    qui garantit l'alignement sur toute machine (Windows C:/ ou D:/, Linux CI).
+    Retourne : liste des noms de fichiers (str), index-alignee avec `tiles`.
+    """
+    import shutil
     if out_dir.exists():
         shutil.rmtree(out_dir, ignore_errors=True)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if overview is not None:
         overview.save(out_dir / "vue_ensemble.png")
+    names = []
     for i, t in enumerate(tiles):
-        name = f"tuile_{i:02d}_r{t.row}_c{t.col}.png"
+        name = tile_filename(i, t)
+        t.filename = name          # source de verite portee par la tuile
         t.image.save(out_dir / name)
+        names.append(name)
     print(f"  [visuel] {len(tiles)} tuile(s)"
           f"{' + vue d ensemble' if overview is not None else ''} "
           f"enregistree(s) dans {out_dir}")
-    return out_dir
+    return names
 
 
 def tile_uniformity(img):
