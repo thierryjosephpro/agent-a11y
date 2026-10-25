@@ -12,7 +12,7 @@ REM  >>> A ADAPTER : mettez le chemin de VOTRE ollama Intel dans INTEL_OLLAMA.
 REM ===========================================================================
 
 REM -- Partage du meme dossier de modeles pour eviter tout re-telechargement --
-set OLLAMA_MODELS=C:\Users\thier\.ollama\models
+set OLLAMA_MODELS=%USERPROFILE%\.ollama\models
 
 REM -- Chemin de l'executable Ollama accelere Intel (portable zip IPEX-LLM) ----
 set INTEL_OLLAMA=C:\ollama-intel\ollama.exe
