@@ -126,6 +126,12 @@ AGENT_TILING=SAFE_SMALL TILING_STRATEGY=SEQ python run.py "test_page/index.html"
 Remove-Item Env:AGENT_TILING, Env:TILING_STRATEGY
 ```
 
+### Autres pages testés
+```
+$env:AGENT_TILING = "SAFE_SMALL"
+$env:TILING_STRATEGY = "SEQ"
+python run.py "test_page/index.html" "test_page/index_long.html" "https://www.w3.org/WAI/demos/bad/before/home.html" 
+```
 ---
 
 ## 5. Comprendre le découpage et les stratégies
